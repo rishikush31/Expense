@@ -1,4 +1,4 @@
-const { pool } = require("../db");
+const pool= require("../db");
 
 exports.listShares = async (req, res) => {
     try {
@@ -6,6 +6,8 @@ exports.listShares = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
+
+        console.log(userId, page, limit, offset);
 
         const sharesRes = await pool.query(
             `SELECT * FROM expense_share WHERE participant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
@@ -22,6 +24,7 @@ exports.listShares = async (req, res) => {
 
 exports.updateShareStatus = async (req, res) => {
     try {
+
         const userId = req.user.id;
         const shareId = req.params.id;
         const { status } = req.body;
@@ -31,26 +34,29 @@ exports.updateShareStatus = async (req, res) => {
         }
 
         const sharesRes = await pool.query(
-            `SELECT 1 FROM expense_share WHERE participant_id = $1 AND id = $2`,
-            [userId, shareId]
+            `SELECT * FROM expense_share WHERE id = $1 LIMIT 1`,
+            [shareId]
         );
 
         if(sharesRes.rowCount == 0){
             return res.status(400).json({ error: "No expense share found" });
         }
 
-        if (status == "ACKED" && userId == sharesRes.owed_to_user_id) {
+        if (status == "ACKED" && userId == sharesRes.rows[0].owed_to_user_id) {
             await pool.query(
                 `UPDATE expense_share SET status = $1 WHERE id = $2`,
                 [status, shareId]
             );
+            return res.status(201).json({message : "Updation successfull"});
         }
 
-        if (status == "PAID" && userId == sharesRes.participant_id) {
+
+        if (status == "PAID" && userId == sharesRes.rows[0].participant_id) {
             await pool.query(
                 `UPDATE expense_share SET status = $1 WHERE id = $2`,
                 [status, shareId]
             );
+            return res.status(201).json({message : "Updation successfull"});
         }
 
         return res.status(403).json({ error: "Not authorized to view this expense" });

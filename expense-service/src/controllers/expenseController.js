@@ -44,12 +44,9 @@ exports.createExpense = async (req, res) => {
             await pool.query(
                 `INSERT INTO expense_share (id, expense_id, participant_id, owed_to_user_id, amount) 
          VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
-                [expense.id, s.participantId, s.owedToUserId, s.amount]
+                [expense.id, s.participantId || userId, s.owedToUserId, s.amount]
             );
         }
-
-        //-------------------IMPLEMENT NOTIFICATION ADDING--------------------------------------
-        //--------------------------------------------------------------------------------------
 
         res.status(201).json({ expense });
     } catch (err) {
@@ -62,7 +59,7 @@ exports.createExpense = async (req, res) => {
 exports.listExpenses = async (req, res) => {
     try {
 
-        const ownerId = req.user.id; // current user
+        const ownerId = req.user.id;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
@@ -85,7 +82,8 @@ exports.listExpenses = async (req, res) => {
 
 exports.getExpenseById = async (req, res) => {
     try {
-        const userId = req.user.id; // current user
+                
+        const ownerId = req.headers['x-user-id'];
         const expenseId = req.params.id;
 
         const expenseRes = await pool.query(
@@ -100,10 +98,10 @@ exports.getExpenseById = async (req, res) => {
         const expense = expenseRes.rows[0];
 
         // check if user is a participant
-        if (expense.owner_id !== userId) {
+        if (expense.owner_id !== ownerId) {
             const participantRes = await pool.query(
-                `SELECT 1 FROM expense_share WHERE expense_id = $1 AND participant_id = $2 LIMIT 1`,
-                [expenseId, userId]
+                `SELECT * FROM expense_share WHERE expense_id = $1 AND participant_id = $2 LIMIT 1`,
+                [expenseId, ownerId]
             );
 
             if (participantRes.rowCount === 0) {
