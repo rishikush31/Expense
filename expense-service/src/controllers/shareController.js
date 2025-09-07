@@ -2,12 +2,10 @@ const pool= require("../db");
 
 exports.listShares = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.headers['x-user-id'];
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
-
-        console.log(userId, page, limit, offset);
 
         const sharesRes = await pool.query(
             `SELECT * FROM expense_share WHERE participant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
@@ -25,7 +23,7 @@ exports.listShares = async (req, res) => {
 exports.updateShareStatus = async (req, res) => {
     try {
 
-        const userId = req.user.id;
+        const userId = req.headers['x-user-id'];
         const shareId = req.params.id;
         const { status } = req.body;
 
