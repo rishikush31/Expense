@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 exports.createExpense = async (req, res) => {
 
     try {
-        const ownerId = req.user.id;
+        const ownerId = req.headers['x-user-id'];
         const { title, currency, totalAmount, note, shares } = req.body;
 
         // --- Validation ---
@@ -59,7 +59,7 @@ exports.createExpense = async (req, res) => {
 exports.listExpenses = async (req, res) => {
     try {
 
-        const ownerId = req.user.id;
+        const ownerId = req.headers['x-user-id'];
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
